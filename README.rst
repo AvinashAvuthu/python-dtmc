@@ -6,7 +6,7 @@ python-dtmc
 .. image:: https://img.shields.io/pypi/v/dtmc.svg
         :target: https://pypi.python.org/pypi/dtmc
 
-.. image:: https://img.shields.io/travis/benlongo/dtmc.svg
+.. image:: https://img.shields.io/travis/benlongo/python-dtmc.svg
         :target: https://travis-ci.org/benlongo/python-dtmc
 
 .. image:: https://readthedocs.org/projects/python-dtmc/badge/?version=latest
