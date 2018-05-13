@@ -1,5 +1,5 @@
 ====
-dtmc
+python-dtmc
 ====
 
 
@@ -7,10 +7,10 @@ dtmc
         :target: https://pypi.python.org/pypi/dtmc
 
 .. image:: https://img.shields.io/travis/benlongo/dtmc.svg
-        :target: https://travis-ci.org/benlongo/dtmc
+        :target: https://travis-ci.org/benlongo/python-dtmc
 
 .. image:: https://readthedocs.org/projects/dtmc/badge/?version=latest
-        :target: https://dtmc.readthedocs.io/en/latest/?badge=latest
+        :target: https://python-dtmc.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 
@@ -27,11 +27,3 @@ Features
 --------
 
 * TODO
-
-Credits
--------
-
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
-
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
