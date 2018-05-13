@@ -9,8 +9,8 @@ python-dtmc
 .. image:: https://img.shields.io/travis/benlongo/dtmc.svg
         :target: https://travis-ci.org/benlongo/python-dtmc
 
-.. image:: https://readthedocs.org/projects/dtmc/badge/?version=latest
-        :target: https://readthedocs.org/projects/python-dtmc/badge/
+.. image:: https://readthedocs.org/projects/python-dtmc/badge/?version=latest
+        :target: https://python-dtmc.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 
@@ -20,7 +20,7 @@ A python package for Discrete-Time Markov Chains.
 
 
 * Free software: MIT license
-* Documentation: https://python-dtmc.readthedocs.io.
+* Documentation: https://dtmc.readthedocs.io.
 
 
 Features
