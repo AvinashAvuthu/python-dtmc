@@ -20,7 +20,7 @@ A python package for Discrete-Time Markov Chains.
 
 
 * Free software: MIT license
-* Documentation: https://dtmc.readthedocs.io.
+* Documentation: https://python-dtmc.readthedocs.io.
 
 
 Features
