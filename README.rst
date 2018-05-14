@@ -13,6 +13,11 @@ python-dtmc
         :target: https://python-dtmc.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
+.. image:: https://pyup.io/repos/github/benlongo/python-dtmc/shield.svg
+     :target: https://pyup.io/repos/github/benlongo/python-dtmc/
+     :alt: Updates
+
+
 
 
 
