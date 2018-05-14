@@ -3,7 +3,10 @@
 """Main module."""
 
 from functools import reduce, partial
-from math import gcd
+try:
+    from math import gcd
+except ImportError:
+    from fractions import gcd
 import networkx as nx
 import numpy as np
 
