@@ -14,5 +14,5 @@ deploy:
     secure: AFSAN9TiUUGDxWpx+z9RWcE5oKbMPz7Bos/ndBh1ZWJ3b5ZdWxG6WOfG5Piy7Q/GIeLnn/XVwf2we117nQcMydfBcLTfNQJsP1xUhmLUnoXJzPhVJh0XaD938GVy+hFkHD8DwHepF5RgDNaDbHudapzj1htfNdrGsWfb+VX8RJBpefWO40Lb3JBWd8dt/ya4/vn08ARZYTbsbAvGrYdIMavi9YLpvTVpiN/5pA5sV0h5IpTDjMNq60C7GuUJdt5kVTd/AGNToX2KjY08BSh5c2KsYgA1nqOXvQpU+wiKGD230ynzoPUISWgBllhW/aoyZLYMbP/eydeJHUIVWoudlYBp7/ZwyOUjmuyxiSwx0bW46717XxA+nEl6619VLbqVY30GchDgo6SEUb2xUm4tTsjspd9byCgqTtKtzA2Y3denpEsiRHdhDQ1Q04+E2I9KafDJxAo/vspSCAUEIZT/8/c8nfl6aWKFe+GesIjhLs8fgOfzTBvvp2CViHS7Z0aSRAuPrqSMTW7PNK36/8xZw/i/BiIgr4eAxj3uBGQgb4uxP3J8XpwhXHSDlSDJGz+EZ7BMXPoBi/xv8x40A1BSeHU5nKGCwLH6rtKaxsUjBlPEJkjh863TVxizSS+9mNp44tPDB97Jrv53JDWqO67jPNDFVe3itYrxU8eD4HQTw6o=
   on:
     tags: true
-    repo: benlongo/dtmc
+    repo: benlongo/python-dtmc
     python: 3.6
