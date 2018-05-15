@@ -154,3 +154,14 @@ def test_recurrent_states():
     mc = DiscreteTimeMarkovChain(ravner_p)
     r_states = mc.recurrent_states()
     assert r_states == {0, 1, 3, 4, 5}
+
+
+# ---- Test steady state distribution ----
+
+fenix_p = [[0.8, 0.2],
+           [0.4, 0.6]]
+
+
+def test_steady_state():
+    mc = DiscreteTimeMarkovChain(fenix_p)
+    assert np.allclose(mc.steady_states(), [2/3.0, 1/3.0])

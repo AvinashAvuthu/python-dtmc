@@ -83,6 +83,18 @@ class DiscreteTimeMarkovChain(object):
 
     def steady_states(self):
         """Return the vector(s) of steady state(s)."""
+        if self.is_reducible():
+            raise NotImplementedError("Steady state distribution only implemented for irreducible chains.")
+
+        n = self._num_states
+        p = self._P.T - np.eye(self._num_states)
+
+        sum_constraint = np.vstack((p, np.ones(n)))
+
+        b = np.zeros(n + 1)
+        b[-1] = 1
+
+        return np.linalg.lstsq(sum_constraint, b)[0]
 
     def canonic_form(self):
         """Return the transition matrix in canonic form."""
