@@ -67,12 +67,13 @@ class DiscreteTimeMarkovChain(object):
         return list(filter(is_transient, self.communicating_classes()))
 
     def _absorbing_idxs(self):
-        return np.count_nonzero(np.asarray(self._P), 1) == 1
+        mask = np.count_nonzero(np.asarray(self._P), 1) == 1
+        return np.arange(self._num_states)[mask]
 
     def absorbing_states(self):
         """Return a list of absorbing states, if any."""
         # If a row has one non-zero entry, it must be a one and the state is recurring
-        return [label for label, is_absorbing in zip(self.labels, self._absorbing_idxs()) if is_absorbing]
+        return [self.labels.inv[i] for i in self._absorbing_idxs()]
 
     def transient_states(self):
         """Return a list of transient states, if any."""
