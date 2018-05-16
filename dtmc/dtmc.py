@@ -26,7 +26,7 @@ def _is_transient_component(graph, component):
 
 
 class DiscreteTimeMarkovChain(object):
-    def __init__(self, transition_matrix, labels=None):
+    def __init__(self, transition_matrix, labels=None, absolute_sum_tolerance=1e-08):
         self._P = np.asmatrix(transition_matrix, 'float64')
         self._num_states = self._P.shape[0]
 
@@ -37,7 +37,7 @@ class DiscreteTimeMarkovChain(object):
         # Check that we got a right stochastic matrix
         if np.any(self._P < 0):
             raise ValueError("The transition matrix can only contain non-negative values.")
-        if not np.allclose(np.sum(self._P, 1), np.ones(self._num_states)):  # TODO: The tolerance should be passed in
+        if not np.allclose(np.sum(self._P, 1), np.ones(self._num_states), atol=absolute_sum_tolerance):
             raise ValueError("The transition matrix must have rows that sum to (almost) 1.")
 
         if labels is None:
@@ -72,8 +72,6 @@ class DiscreteTimeMarkovChain(object):
     def absorbing_states(self):
         """Return a list of absorbing states, if any."""
         # If a row has one non-zero entry, it must be a one and the state is recurring
-        print(self.labels)
-        print(self._absorbing_idxs())
         return [label for label, is_absorbing in zip(self.labels, self._absorbing_idxs()) if is_absorbing]
 
     def transient_states(self):
