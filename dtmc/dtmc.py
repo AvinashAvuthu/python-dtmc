@@ -9,6 +9,7 @@ except ImportError:
     from fractions import gcd
 import networkx as nx
 import numpy as np
+from bidict import bidict
 
 
 def _reachable_from_component(graph, component):
@@ -34,20 +35,20 @@ class DiscreteTimeMarkovChain(object):
             raise ValueError("The transition matrix must be square. Got shape {}.".format(self._P.shape))
 
         # Check that we got a right stochastic matrix
-        if not np.all(self._P >= 0):
+        if np.any(self._P < 0):
             raise ValueError("The transition matrix can only contain non-negative values.")
-        if not np.allclose(np.sum(self._P, 1), np.ones(self._num_states)):
-            raise ValueError("The transition matrix must have rows that sum to (almost) 1")
+        if not np.allclose(np.sum(self._P, 1), np.ones(self._num_states)):  # TODO: The tolerance should be passed in
+            raise ValueError("The transition matrix must have rows that sum to (almost) 1.")
 
         if labels is None:
-            self.labels = np.arange(self._num_states)
+            self.labels = bidict(zip(range(self._num_states), range(self._num_states)))
         else:
             if len(labels) != self._num_states:
                 raise ValueError("The number of labels given must equal the number of items in the transition matrix." +
-                                 "Got {} labels for a matrix with {} items.".format(len(labels), self._num_states))
+                                 "Got {} labels for a matrix with {} states.".format(len(labels), self._num_states))
             if len(set(labels)) != len(labels):
                 raise ValueError("The labels must be unique.")
-            self.labels = np.asarray(labels)
+            self.labels = bidict(zip(labels, range(self._num_states)))
 
         self._graph = nx.DiGraph(self._P)
 
@@ -71,7 +72,9 @@ class DiscreteTimeMarkovChain(object):
     def absorbing_states(self):
         """Return a list of absorbing states, if any."""
         # If a row has one non-zero entry, it must be a one and the state is recurring
-        return self.labels[self._absorbing_idxs()]
+        print(self.labels)
+        print(self._absorbing_idxs())
+        return [label for label, is_absorbing in zip(self.labels, self._absorbing_idxs()) if is_absorbing]
 
     def transient_states(self):
         """Return a list of transient states, if any."""
@@ -94,7 +97,7 @@ class DiscreteTimeMarkovChain(object):
         b = np.zeros(n + 1)
         b[-1] = 1
 
-        return np.linalg.lstsq(sum_constraint, b)[0]
+        return np.linalg.lstsq(sum_constraint, b, rcond=None)[0]
 
     def canonic_form(self):
         """Return the transition matrix in canonic form."""
@@ -110,8 +113,7 @@ class DiscreteTimeMarkovChain(object):
     def period(self, state):
         """Return the period of the given state."""
         cycles = nx.simple_cycles(self._graph)
-        state_idx = np.where(self.labels == state)[0][0]  # TODO: there is likely a better way
-        cycles_on_state = filter(lambda cycle: state_idx in cycle, cycles)
+        cycles_on_state = filter(lambda cycle: self.labels[state] in cycle, cycles)
         cycle_lengths = map(len, cycles_on_state)
         return reduce(gcd, cycle_lengths)
     # TODO: Calculate the cyclic classes (see http://math.bme.hu/~nandori/Virtual_lab/stat/markov/Periodicity.pdf)

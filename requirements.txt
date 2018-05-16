@@ -1,2 +1,3 @@
+bidict==0.17.2
 networkx==2.1
 numpy==1.14.3

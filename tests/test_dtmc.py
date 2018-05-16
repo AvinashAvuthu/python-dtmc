@@ -87,7 +87,7 @@ def test_all_absorbing():
 def test_all_absorbing_labelled():
     labels = [str(i) for i in range(10)]
     mc = DiscreteTimeMarkovChain(np.eye(10), labels)
-    assert np.array_equal(mc.absorbing_states(), labels)
+    assert mc.absorbing_states() == labels
 
 
 # ---- Test communicating classes ---
