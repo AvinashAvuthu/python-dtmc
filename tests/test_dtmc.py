@@ -12,14 +12,17 @@ import numpy as np
 
 market_p = [[0.9, 0.075, 0.025], [0.15, 0.8, 0.05], [0.25, 0.25, 0.5]]
 market_labels = ('bull', 'bear', 'stagnant')
+market_chain = DiscreteTimeMarkovChain(market_p, market_labels)
 
 weather_p = [[0.9, 0.1], [0.5, 0.5]]
 weather_labels = ('sunny', 'rainy')
+weather_chain = DiscreteTimeMarkovChain(weather_p, weather_labels)
 
 sigman_p = [[1/2.0, 1/2.0, 0, 0],
             [1/2.0, 1/2.0, 0, 0],
             [1/3.0, 1/6.0, 1/6.0, 1/3.0],
             [0, 0, 0, 1]]
+sigman_chain = DiscreteTimeMarkovChain(sigman_p)
 
 periodic_p = [[0, 0, 1/2.0, 1/4.0, 1/4.0, 0, 0],
               [0, 0, 1/3.0, 0, 2/3.0, 0, 0],
@@ -28,53 +31,62 @@ periodic_p = [[0, 0, 1/2.0, 1/4.0, 1/4.0, 0, 0],
               [0, 0, 0, 0, 0, 3/4.0, 1/4.0],
               [1/2.0, 1/2.0, 0, 0, 0, 0, 0],
               [1/4.0, 3/4.0, 0, 0, 0, 0, 0]]
+periodic_chain = DiscreteTimeMarkovChain(periodic_p)
+
+ravner_p = [[0, 1, 0, 0, 0, 0],
+            [0.4, 0.6, 0, 0, 0, 0],
+            [0.3, 0, 0.4, 0.2, 0.1, 0],
+            [0, 0, 0, 0.3, 0.7, 0],
+            [0, 0, 0, 0.5, 0, 0.5],
+            [0, 0, 0, 0.3, 0, 0.7]]
+ravner_chain = DiscreteTimeMarkovChain(ravner_p)
 
 
-# --- Acceptance of valid transition matrices ----
-
-def test_accept_identity_matrix():
-    """Verify the identity matrix is a valid transition matrix."""
-    DiscreteTimeMarkovChain(np.eye(10))
-    DiscreteTimeMarkovChain(np.eye(10).T)
+def random_markov_matrix(size):
+    mat = np.random.rand(size, size)
+    row_sums = mat.sum(axis=1, keepdims=True)
+    return mat / row_sums
 
 
-def test_accept_market_example():
-    DiscreteTimeMarkovChain(market_p, market_labels)
+# ---- Random markov matrix is valid ----
+def test_random_markov_matrix():
+    DiscreteTimeMarkovChain(random_markov_matrix(10))
 
 
-def test_accept_weather_example():
-    DiscreteTimeMarkovChain(weather_p, weather_labels)
+# ---- Acceptance of valid transition matrices ----
+
+valid_chains = [
+    (market_p, market_labels),
+    (weather_p, weather_labels),
+    (sigman_p, None),
+    (periodic_p, None),
+    (np.eye(10), None),
+    (np.eye(10).T, None),
+    (ravner_p, None)
+]
+
+
+@pytest.mark.parametrize('matrix, labels', valid_chains)
+def test_accept_valid_chain(matrix, labels):
+    DiscreteTimeMarkovChain(matrix, labels)
 
 
 # ---- Rejection of invalid transition matrices ----
 
-def test_reject_wrong_num_labels():
+bad_chains = [
+    (market_p, weather_labels),
+    (weather_p, market_labels),
+    (-1 * np.eye(10), None),
+    (np.zeros((5, 4)), None),
+    (np.eye(10) + np.eye(10).T, None),
+    (np.eye(3), ['a', 'b', 'a'])
+]
+
+
+@pytest.mark.parametrize('matrix, labels', bad_chains)
+def test_reject_bad_chain(matrix, labels):
     with pytest.raises(ValueError):
-        DiscreteTimeMarkovChain(market_p, weather_labels)
-    with pytest.raises(ValueError):
-        DiscreteTimeMarkovChain(weather_p, market_labels)
-
-
-def test_reject_negative_values():
-    with pytest.raises(ValueError):
-        DiscreteTimeMarkovChain(-1 * np.eye(10))
-
-
-def test_reject_non_square_matrix():
-    with pytest.raises(ValueError):
-        DiscreteTimeMarkovChain(np.zeros((5, 4)))
-
-
-def test_reject_non_stochastic():
-    with pytest.raises(ValueError):
-        DiscreteTimeMarkovChain(np.eye(10) + np.eye(10).T)
-
-
-def test_reject_duplicate_labels():
-    with pytest.raises(ValueError):
-        labels = ('a', 'b', 'a')
-        m = np.eye(3)
-        DiscreteTimeMarkovChain(m, labels)
+        DiscreteTimeMarkovChain(matrix, labels)
 
 
 # ---- Test absorbing states ----
@@ -93,44 +105,44 @@ def test_all_absorbing_labelled():
 # ---- Test communicating classes ---
 
 def test_multiple_communicating_classes():
-    mc = DiscreteTimeMarkovChain(sigman_p)
-    classes = map(tuple, mc.communicating_classes())
+    classes = map(tuple, sigman_chain.communicating_classes())
     expected_classes = map(tuple, [{0, 1}, {2}, {3}])
     assert sorted(classes) == sorted(expected_classes)
 
 
 # ---- Test irreducibility ----
 
-def test_reducible_chain():
-    assert DiscreteTimeMarkovChain(sigman_p).is_reducible()
-    assert DiscreteTimeMarkovChain(np.eye(10)).is_reducible()
+reducible_chains = [
+    (sigman_p, None),
+    (np.eye(10), None)
+]
+irreducible_chains = [
+    (market_p, market_labels),
+    (weather_p, weather_labels)
+]
 
 
-def test_irreducible_chain():
-    assert DiscreteTimeMarkovChain(market_p, market_labels).is_irreducible()
-    assert DiscreteTimeMarkovChain(weather_p, weather_labels).is_irreducible()
+@pytest.mark.parametrize('matrix, labels', reducible_chains)
+def test_reducible_chain(matrix, labels):
+    assert DiscreteTimeMarkovChain(matrix, labels).is_reducible()
+
+
+@pytest.mark.parametrize('matrix, labels', irreducible_chains)
+def test_irreducible_chain(matrix, labels):
+    assert DiscreteTimeMarkovChain(matrix, labels).is_irreducible()
 
 
 # ---- Test periodicity ----
-
 def test_aperiodic_chain():
-    assert DiscreteTimeMarkovChain(weather_p, weather_labels).period('sunny') == 1
-    assert DiscreteTimeMarkovChain(market_p, market_labels).period('bull') == 1
+    assert weather_chain.period('sunny') == 1
+    assert market_chain.period('bull') == 1
 
 
 def test_periodic_chain():
-    assert DiscreteTimeMarkovChain(periodic_p).period(0) == 3
+    assert periodic_chain.period(0) == 3
 
 
 # ---- Test transience and recurrence ----
-
-ravner_p = [[0, 1, 0, 0, 0, 0],
-            [0.4, 0.6, 0, 0, 0, 0],
-            [0.3, 0, 0.4, 0.2, 0.1, 0],
-            [0, 0, 0, 0.3, 0.7, 0],
-            [0, 0, 0, 0.5, 0, 0.5],
-            [0, 0, 0, 0.3, 0, 0.7]]
-
 
 def test_transient_classes():
     mc = DiscreteTimeMarkovChain(ravner_p)

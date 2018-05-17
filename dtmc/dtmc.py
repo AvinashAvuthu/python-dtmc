@@ -67,13 +67,16 @@ class DiscreteTimeMarkovChain(object):
         return list(filter(is_transient, self.communicating_classes()))
 
     def _absorbing_idxs(self):
+        # If a row has one non-zero entry, it must be a one and the state is recurring
         mask = np.count_nonzero(np.asarray(self._P), 1) == 1
         return np.arange(self._num_states)[mask]
 
+    def _labels_at_indices(self, indices):
+        return [self.labels.inv[i] for i in indices]
+
     def absorbing_states(self):
         """Return a list of absorbing states, if any."""
-        # If a row has one non-zero entry, it must be a one and the state is recurring
-        return [self.labels.inv[i] for i in self._absorbing_idxs()]
+        return self._labels_at_indices(self._absorbing_idxs())
 
     def transient_states(self):
         """Return a list of transient states, if any."""
@@ -82,6 +85,9 @@ class DiscreteTimeMarkovChain(object):
     def recurrent_states(self):
         """Return a list of recurrent states, if any."""
         return reduce(set.union, self.recurrent_classes(), set())
+
+    def _sub_matrix(self, indices):
+        return self._P[np.ix_(indices, indices)]
 
     def steady_states(self):
         """Return the vector(s) of steady state(s)."""
@@ -109,6 +115,15 @@ class DiscreteTimeMarkovChain(object):
     def is_reducible(self):
         return not self.is_irreducible()
 
+    def is_ergodic(self):
+        m = (self._num_states - 1)**2 + 1
+        return np.all(np.linalg.matrix_power(self._P, m) > 0)
+
+    def mixing_time(self):
+        w, _ = np.linalg.eig(self._P)
+        u = np.sort(np.absolute(w))[-2]
+        return -1 / np.log(u)
+
     def period(self, state):
         """Return the period of the given state."""
         cycles = nx.simple_cycles(self._graph)
@@ -116,3 +131,27 @@ class DiscreteTimeMarkovChain(object):
         cycle_lengths = map(len, cycles_on_state)
         return reduce(gcd, cycle_lengths)
     # TODO: Calculate the cyclic classes (see http://math.bme.hu/~nandori/Virtual_lab/stat/markov/Periodicity.pdf)
+
+    def conditional_distribution(self, state):
+        return self._P[self.labels[state]]
+
+    def redistribute(self, num_steps, initial_distribution=None):
+        if num_steps < 1:
+            raise ValueError("The number of steps must be a positive integer. Received {}".format(num_steps))
+        if initial_distribution is None:
+            initial_distribution = np.ones(self._num_states, dtype='float64') / self._num_states
+        else:
+            initial_distribution = np.asarray(initial_distribution)
+            if initial_distribution.size != self._num_states:
+                raise ValueError("The initial distribution must have size equal to the number of states.")
+            initial_distribution /= initial_distribution.sum()
+
+        redistribution = np.array((self._num_states, num_steps + 1))
+        redistribution[0] = initial_distribution
+        p_power = self._P * self._P
+        for i in range(1, num_steps + 2):
+            redistribution[i] = np.matmul(initial_distribution, p_power)
+            p_power *= self._P
+        return redistribution
+
+
