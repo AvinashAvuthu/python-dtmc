@@ -41,6 +41,9 @@ ravner_p = [[0, 1, 0, 0, 0, 0],
             [0, 0, 0, 0.3, 0, 0.7]]
 ravner_chain = DiscreteTimeMarkovChain(ravner_p)
 
+fenix_p = [[0.8, 0.2],
+           [0.4, 0.6]]
+
 
 def random_markov_matrix(size):
     mat = np.random.rand(size, size)
@@ -170,10 +173,15 @@ def test_recurrent_states():
 
 # ---- Test steady state distribution ----
 
-fenix_p = [[0.8, 0.2],
-           [0.4, 0.6]]
-
-
 def test_steady_state():
     mc = DiscreteTimeMarkovChain(fenix_p)
     assert np.allclose(mc.steady_states(), [2/3.0, 1/3.0])
+
+
+# ---- Test redistribution ----
+
+def test_market_redistribution():
+    init = [0, 1, 0]  # Start in a bear market
+    redistribution = market_chain.redistribute(2, init)
+    assert np.allclose(redistribution[-1], [0.3575, 0.56825, 0.07425])
+

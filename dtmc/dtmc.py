@@ -141,15 +141,15 @@ class DiscreteTimeMarkovChain(object):
         if initial_distribution is None:
             initial_distribution = np.ones(self._num_states, dtype='float64') / self._num_states
         else:
-            initial_distribution = np.asarray(initial_distribution)
+            initial_distribution = np.asarray(initial_distribution, dtype='float64')
             if initial_distribution.size != self._num_states:
                 raise ValueError("The initial distribution must have size equal to the number of states.")
             initial_distribution /= initial_distribution.sum()
 
-        redistribution = np.array((self._num_states, num_steps + 1))
-        redistribution[0] = initial_distribution
+        redistribution = np.zeros((num_steps + 1, self._num_states), dtype='float64')
+        redistribution[0, :] = initial_distribution
         p_power = self._P * self._P
-        for i in range(1, num_steps + 2):
+        for i in range(1, num_steps + 1):
             redistribution[i] = np.matmul(initial_distribution, p_power)
             p_power *= self._P
         return redistribution
