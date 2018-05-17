@@ -89,6 +89,11 @@ class DiscreteTimeMarkovChain(object):
     def _sub_matrix(self, indices):
         return self._P[np.ix_(indices, indices)]
 
+    def sub_chain(self, states):
+        state_indices = [self.labels[state] for state in states]
+        sub_matrix = self._sub_matrix(state_indices)
+        return DiscreteTimeMarkovChain(sub_matrix, states)
+
     def steady_states(self):
         """Return the vector(s) of steady state(s)."""
         if self.is_reducible():
@@ -105,8 +110,28 @@ class DiscreteTimeMarkovChain(object):
         return np.linalg.lstsq(sum_constraint, b, rcond=None)[0]
 
     def canonic_form(self):
-        """Return the transition matrix in canonic form."""
-        raise NotImplementedError
+        """Return a DTMC with its transition matrix in canonic form."""
+        q_states = sorted(list(self.transient_states()))
+        r_states = sorted(list(self.recurrent_states()))
+
+        q_block = self._sub_matrix(q_states)
+        q_permutation = np.lexsort(q_block)
+        q_block = q_block[np.ix_(q_permutation, q_permutation)]
+
+        r_block = self._sub_matrix(r_states)
+        r_permutation = np.lexsort(r_block)
+        r_block = r_block[np.ix_(r_permutation, r_permutation)]
+
+        zero_block = np.zeros((len(r_states), len(q_states)))
+        eye_block = np.eye(len(r_states))
+
+        canonic_matrix = np.block([[q_block, r_block], [zero_block, eye_block]])
+
+        total_permutation = np.concatenate((q_permutation, r_permutation + len(q_states)))
+        labels = np.array([self.labels.inv[i] for i in sorted(self.labels.values())])
+        permuted_labels = labels[total_permutation]
+
+        return DiscreteTimeMarkovChain(canonic_matrix, permuted_labels)
 
     def is_irreducible(self):
         """Check if the chain is reducible."""
@@ -136,6 +161,7 @@ class DiscreteTimeMarkovChain(object):
         return self._P[self.labels[state]]
 
     def redistribute(self, num_steps, initial_distribution=None):
+        # TODO: Does this assume ergodic???
         if num_steps < 1:
             raise ValueError("The number of steps must be a positive integer. Received {}".format(num_steps))
         if initial_distribution is None:

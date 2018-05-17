@@ -51,6 +51,13 @@ def random_markov_matrix(size):
     return mat / row_sums
 
 
+def frog_matrix(p, q):
+    return np.asmatrix([
+        [1 - p, p],
+        [q, 1 - q]
+    ])
+
+
 # ---- Random markov matrix is valid ----
 def test_random_markov_matrix():
     DiscreteTimeMarkovChain(random_markov_matrix(10))
@@ -185,3 +192,18 @@ def test_market_redistribution():
     redistribution = market_chain.redistribute(2, init)
     assert np.allclose(redistribution[-1], [0.3575, 0.56825, 0.07425])
 
+
+# ---- Test stationary distribution ----
+
+def test_frog_stationary_distribution():
+    # TODO: make this a property based test
+    p, q = 0.2, 0.3
+    mc = DiscreteTimeMarkovChain(frog_matrix(p, q))
+    assert np.allclose(mc.steady_states(), [q/(p+q), (p/(p+q))])
+
+
+def test_frog_mixing_time():
+    # TODO: Make this a property based test
+    p, q = 0.2, 0.3
+    mc = DiscreteTimeMarkovChain(frog_matrix(p, q))
+    assert mc.mixing_time() == -1/np.log(1 - p - q)
