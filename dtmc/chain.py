@@ -27,39 +27,56 @@ def quadprog_solve_qp(P, q, G=None, h=None, A=None, b=None):
     return quadprog.solve_qp(qp_G, qp_a, qp_C, qp_b, meq)[0]
 
 
+def _gather_dicts(bases, namespace):
+    return dict(ChainMap(*([base.__dict__ for base in list(bases)] + [namespace]))).values()
+
+
+def _generate_methods(methods, wrapper, marker, namer):
+    marked = [m for m in methods if hasattr(m, marker)]
+    new_methods = list(map(wrapper, marked))
+    for new_method, old_method in zip(new_methods, marked):
+        new_method.__name__ = namer(old_method.__name__)
+        new_method.__doc__ = old_method.__doc__  # TODO: How should this manifest?
+    return new_methods
+
+
+def make_public(name):
+    return name.lstrip('_')
+
+
+def _add_methods_to_class(klass, methods):
+    for method in methods:
+        setattr(klass, method.__name__, method)
+
+
 # ----- Labelled Method Generation Magic ---- #
 class IndexMethodGenerator(type):
     def __new__(mcs, name, bases, namespace, **kwargs):
-        result = type.__new__(mcs, name, bases, dict(namespace))
-        methods = dict(ChainMap(*([base.__dict__ for base in list(bases)] + [namespace]))).values()
+        klass = type.__new__(mcs, name, bases, dict(namespace))
+        methods = _gather_dicts(bases, namespace)
 
-        tagged_methods = [m for m in methods if hasattr(m, '_labelled') or hasattr(m, '_translate_labels')]
-        for method in tagged_methods:
-            new_name = method.__name__[1:]
-            setattr(result, new_name, method)
-        return result
+        # Don't change any of the methods, just make public versions that alias the private ones
+        labelled_methods = _generate_methods(methods, lambda x: x, '_labelled', make_public)
+        translate_methods = _generate_methods(methods, lambda x: x, '_translate_labels', make_public)
+        _add_methods_to_class(klass, labelled_methods + translate_methods)
+
+        return klass
 
 
 class LabelledMethodGenerator(IndexMethodGenerator):  # Python doesn't like this if it doesn't inherit
     def __new__(mcs, name, bases, namespace, **kwargs):
-        result = type.__new__(mcs, name, bases, dict(namespace))
-        methods = dict(ChainMap(*([base.__dict__ for base in list(bases)] + [namespace]))).values()
-        labelled_methods = [m for m in methods if hasattr(m, '_labelled')]
-        new_methods = map(make_labelled, labelled_methods)
-        for new_method, idx_method in zip(new_methods, labelled_methods):
-            new_method.__name__ = idx_method.__name__[1:]
-            new_method.__doc__ = idx_method.__doc__
-            setattr(result, new_method.__name__, new_method)
+        klass = type.__new__(mcs, name, bases, dict(namespace))
+        methods = _gather_dicts(bases, namespace)
 
-        indexed_methods = [m for m in methods if hasattr(m, '_translate_labels')]
-        new_methods = map(make_indexed, indexed_methods)
-        for new_method, indexed_method in zip(new_methods, indexed_methods):
-            new_method.__name__ = indexed_method.__name__[1:]
-            new_method.__doc__ = indexed_method.__doc__
-            setattr(result, new_method.__name__, new_method)
-        # TODO: There is some structure to be factored here
-        return result
+        # Generate labelled methods and translate returned indices to labels
+        labelled_methods = _generate_methods(methods, make_labelled, '_labelled', make_public)
+        translate_methods = _generate_methods(methods, make_indexed, '_translate_labels', make_public)
+        _add_methods_to_class(klass, labelled_methods + translate_methods)
 
+        return klass
+
+
+# ---- Decorators ----
 
 def generate_labelled_method(method):
     method._labelled = True
@@ -224,6 +241,7 @@ class DTMC(object, metaclass=IndexMethodGenerator):
         for i, b in enumerate(basis):
             U += sol[i]*b
 
+        # TODO: Finish this bullshit
 
     def is_irreducible(self):
         """Check if the chain is reducible."""
@@ -345,14 +363,13 @@ def windows(seq, n=2):
     if len(result) == n:
         yield result
     for elem in it:
-        result = result[1:] + (elem,)
+        result = result[1:] + (elem, )
         yield result
 
 
 def is_reversible(p: np.matrix, graph: nx.DiGraph):
-    # Kolmogorov criterion
+    # Kolmogorov's criterion
     for cycle in nx.simple_cycles(graph):
-        cycle, reversed(cycle)
         forward_p = reduce(mul, (p[t] for t in windows(cycle)))
         reverse_p = reduce(mul, (p[t] for t in windows(reversed(cycle))))
         if forward_p != reverse_p:
@@ -360,12 +377,37 @@ def is_reversible(p: np.matrix, graph: nx.DiGraph):
     return True
 
 
+def steady_state(p):
+    n = p.shape[0]
+    e = np.ones((n, 1))
+    ct = p.sum(0)
+    hit = (np.identity(n) - p + e*ct)
+    return np.linalg.solve(hit.T, ct.T).T.A[0]
+
+
+def mfpt(p):
+    # Note: assumes irreducible i think
+
+    n = p.shape[0]
+    pi = steady_state(p)
+    e = np.ones((n, 1))
+    ct = p.sum(0)
+    h = (np.identity(n) - p - e*ct).I
+    m = np.zeros_like(p)
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                m[i, j] = 1 / pi[j]
+            else:
+                m[i, j] = (h[j, j] - h[i, j]) / pi[j]
+    return m
+
+
+mfpt(np.asmatrix([[0.9, 0.075, 0.025], [0.15, 0.8, 0.05], [0.25, 0.25, 0.5]]))
+
+# We need a dag of properties and derived behavior
 
 def dtmc(transition_matrix, labels=None, row_sum_tolerance=1e-08):
     if labels is None:
         return DTMC(transition_matrix)
     return LabelledDTMC(transition_matrix, labels)
-
-
-
-
